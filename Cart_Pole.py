@@ -5,17 +5,9 @@ sys.path.append(dirname(dirname(abspath(__file__))))
 
 import gym
 
-from agents.actor_critic_agents.A2C import A2C
-from agents.DQN_agents.Dueling_DDQN import Dueling_DDQN
-from agents.actor_critic_agents.SAC_Discrete import SAC_Discrete
-from agents.actor_critic_agents.A3C import A3C
-from agents.policy_gradient_agents.PPO import PPO
-from agents.Trainer import Trainer
-from utilities.data_structures.Config import Config
-from agents.DQN_agents.DDQN import DDQN
-from agents.DQN_agents.DDQN_With_Prioritised_Experience_Replay import DDQN_With_Prioritised_Experience_Replay
-from agents.DQN_agents.DQN import DQN
-from agents.DQN_agents.DQN_With_Fixed_Q_Targets import DQN_With_Fixed_Q_Targets
+from DQN_Agents import DQN
+from utils.data_structures import Config
+from base_modules.Trainer import Trainer
 
 config = Config()
 config.seed = 1

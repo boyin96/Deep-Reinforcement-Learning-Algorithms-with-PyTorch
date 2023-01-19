@@ -1,5 +1,6 @@
-class Config(object):
+class Config:
     """Object to hold the config requirements for an agent/game"""
+
     def __init__(self):
         self.seed = None
         self.environment = None
@@ -18,4 +19,3 @@ class Config(object):
         self.randomise_random_seed = True
         self.show_solution_score = False
         self.debug_mode = False
-
