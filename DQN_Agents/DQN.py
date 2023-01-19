@@ -7,7 +7,7 @@ from collections import Counter
 
 from base_modules.Base_Agent import Base_Agent
 from exploration_strategies.Epsilon_Greedy_Exploration import Epsilon_Greedy_Exploration
-from utilities.data_structures.Replay_Buffer import Replay_Buffer
+from utils.data_structures.Replay_Buffer import Replay_Buffer
 
 
 class DQN(Base_Agent):
