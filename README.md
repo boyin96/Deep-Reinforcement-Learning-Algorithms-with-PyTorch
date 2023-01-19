@@ -8,8 +8,6 @@ This repository is for implementing deep reinforcement learning algorithms with 
 
 More RL algorithms will be added soon.
 
-## **Environments Implemented**
-
 ## **License**
 
 This repo is licensed under the MIT License.
