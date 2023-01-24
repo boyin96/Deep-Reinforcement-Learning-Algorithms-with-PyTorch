@@ -1,7 +1,7 @@
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 
 class Dueling_Net(nn.Module):
@@ -11,17 +11,17 @@ class Dueling_Net(nn.Module):
         self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim)
         if args.use_noisy:
             self.V = NoisyLinear(args.hidden_dim, 1)
-            self.A = NoisyLinear(args.hidden_dim, args.action_dim)
+            self.D = NoisyLinear(args.hidden_dim, args.action_dim)
         else:
             self.V = nn.Linear(args.hidden_dim, 1)
-            self.A = nn.Linear(args.hidden_dim, args.action_dim)
+            self.D = nn.Linear(args.hidden_dim, args.action_dim)
 
-    def forward(self, s):
-        s = torch.relu(self.fc1(s))
-        s = torch.relu(self.fc2(s))
-        V = self.V(s)  # batch_size X 1
-        A = self.A(s)  # batch_size X action_dim
-        Q = V + (A - torch.mean(A, dim=-1, keepdim=True))  # Q(s,a)=V(s)+A(s,a)-mean(A(s,a))
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        V = self.V(x)  # batch_size X 1
+        D = self.D(x)  # batch_size X action_dim
+        Q = V + (D - torch.mean(D, dim=-1, keepdim=True))  # Q(s,a)=V(s)+D(s,a)-mean(D(s,a))
         return Q
 
 
@@ -35,11 +35,10 @@ class Net(nn.Module):
         else:
             self.fc3 = nn.Linear(args.hidden_dim, args.action_dim)
 
-    def forward(self, s):
-        s = torch.relu(self.fc1(s))
-        s = torch.relu(self.fc2(s))
-        Q = self.fc3(s)
-        return Q
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
 
 
 class NoisyLinear(nn.Module):
@@ -63,9 +62,8 @@ class NoisyLinear(nn.Module):
     def forward(self, x):
         if self.training:
             self.reset_noise()
-            weight = self.weight_mu + self.weight_sigma.mul(self.weight_epsilon)  # mul是对应元素相乘
+            weight = self.weight_mu + self.weight_sigma.mul(self.weight_epsilon)
             bias = self.bias_mu + self.bias_sigma.mul(self.bias_epsilon)
-
         else:
             weight = self.weight_mu
             bias = self.bias_mu
@@ -74,19 +72,21 @@ class NoisyLinear(nn.Module):
 
     def reset_parameters(self):
         mu_range = 1 / math.sqrt(self.in_features)
+
         self.weight_mu.data.uniform_(-mu_range, mu_range)
         self.bias_mu.data.uniform_(-mu_range, mu_range)
 
         self.weight_sigma.data.fill_(self.sigma_init / math.sqrt(self.in_features))
-        self.bias_sigma.data.fill_(self.sigma_init / math.sqrt(self.out_features))  # 这里要除以out_features
+        self.bias_sigma.data.fill_(self.sigma_init / math.sqrt(self.out_features))
 
     def reset_noise(self):
         epsilon_i = self.scale_noise(self.in_features)
         epsilon_j = self.scale_noise(self.out_features)
-        self.weight_epsilon.copy_(torch.ger(epsilon_j, epsilon_i))
+        self.weight_epsilon.copy_(torch.outer(epsilon_j, epsilon_i))
         self.bias_epsilon.copy_(epsilon_j)
 
-    def scale_noise(self, size):
-        x = torch.randn(size)  # torch.randn产生标准高斯分布
+    @staticmethod
+    def scale_noise(size):
+        x = torch.randn(size)
         x = x.sign().mul(x.abs().sqrt())
         return x

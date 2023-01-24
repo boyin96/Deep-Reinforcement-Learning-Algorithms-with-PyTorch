@@ -1,5 +1,6 @@
 import torch
 import gym
+import random
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
@@ -9,24 +10,26 @@ from replay_buffer import ReplayBuffer, Prioritized_ReplayBuffer, N_Steps_Replay
 
 
 class Runner:
-    def __init__(self, args, env_name, number, seed):
+    def __init__(self, args, env_name, number, model, seed):
         self.args = args
         self.env_name = env_name
         self.number = number
         self.seed = seed
 
-        self.env = gym.make(env_name)
-        self.env_evaluate = gym.make(env_name)  # When evaluating the policy, we need to rebuild an environment
-        self.env.seed(seed)
+        self.env = gym.make(env_name, render_model=model)
         self.env.action_space.seed(seed)
-        self.env_evaluate.seed(seed)
+
+        self.env_evaluate = gym.make(env_name, render_model=model)  # Rebuild an environment to evaluate model
         self.env_evaluate.action_space.seed(seed)
+
         np.random.seed(seed)
+        random.seed(seed)
         torch.manual_seed(seed)
 
         self.args.state_dim = self.env.observation_space.shape[0]
         self.args.action_dim = self.env.action_space.n
-        self.args.episode_limit = self.env._max_episode_steps  # Maximum number of steps per episode
+        self.args.episode_limit = self.env._max_episode_steps  # Maximum steps in each episode
+
         print("env={}".format(self.env_name))
         print("state_dim={}".format(self.args.state_dim))
         print("action_dim={}".format(self.args.action_dim))
@@ -40,42 +43,45 @@ class Runner:
             self.replay_buffer = N_Steps_ReplayBuffer(args)
         else:
             self.replay_buffer = ReplayBuffer(args)
+
         self.agent = DQN(args)
 
-        self.algorithm = 'DQN'
+        self.algorithm = "DQN"
         if args.use_double and args.use_dueling and args.use_noisy and args.use_per and args.use_n_steps:
             self.algorithm = 'Rainbow_' + self.algorithm
         else:
             if args.use_double:
-                self.algorithm += '_Double'
+                self.algorithm += "_Double"
             if args.use_dueling:
-                self.algorithm += '_Dueling'
+                self.algorithm += "_Dueling"
             if args.use_noisy:
-                self.algorithm += '_Noisy'
+                self.algorithm += "_Noisy"
             if args.use_per:
-                self.algorithm += '_PER'
+                self.algorithm += "_PER"
             if args.use_n_steps:
-                self.algorithm += "_N_steps"
+                self.algorithm += "_N_Steps"
 
         self.writer = SummaryWriter(
-            log_dir='runs/DQN/{}_env_{}_number_{}_seed_{}'.format(self.algorithm, env_name, number, seed))
+            log_dir="runs/DQN/{}_env_{}_number_{}_seed_{}".format(self.algorithm, env_name, number, seed))
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
         self.total_steps = 0  # Record the total steps during the training
-        if args.use_noisy:  # 如果使用Noisy net，就不需要epsilon贪心策略了
+
+        if args.use_noisy:
             self.epsilon = 0
         else:
             self.epsilon = self.args.epsilon_init
             self.epsilon_min = self.args.epsilon_min
             self.epsilon_decay = (self.args.epsilon_init - self.args.epsilon_min) / self.args.epsilon_decay_steps
 
-    def run(self, ):
+    def run(self):
         self.evaluate_policy()
         while self.total_steps < self.args.max_train_steps:
             state = self.env.reset()
             done = False
             episode_steps = 0
+
             while not done:
                 action = self.agent.choose_action(state, epsilon=self.epsilon)
                 next_state, reward, done, _ = self.env.step(action)
@@ -104,13 +110,14 @@ class Runner:
 
                 if self.total_steps % self.args.evaluate_freq == 0:
                     self.evaluate_policy()
+
         # Save reward
         np.save('./data_train/{}_env_{}_number_{}_seed_{}.npy'.format(self.algorithm, self.env_name, self.number,
                                                                       self.seed), np.array(self.evaluate_rewards))
 
-    def evaluate_policy(self, ):
+    def evaluate_policy(self):
         evaluate_reward = 0
-        self.agent.net.eval()
+        self.agent.predict_net.eval()
         for _ in range(self.args.evaluate_times):
             state = self.env_evaluate.reset()
             done = False
@@ -121,7 +128,7 @@ class Runner:
                 episode_reward += reward
                 state = next_state
             evaluate_reward += episode_reward
-        self.agent.net.train()
+        self.agent.predict_net.train()
         evaluate_reward /= self.args.evaluate_times
         self.evaluate_rewards.append(evaluate_reward)
         print("total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps, evaluate_reward,

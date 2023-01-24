@@ -1,62 +1,83 @@
 import torch
+import random
 import numpy as np
-from collections import deque
-from DQN.utilities.sum_tree import SumTree
+
+from collections import deque, namedtuple
+from sum_tree import SumTree
+
+Transition = namedtuple("Transition", ["state", "action", "reward", "next_state"])
 
 
-class ReplayBuffer(object):
+class ReplayBuffer:
     def __init__(self, args):
+        self.memory = deque([], maxlen=args.buffer_capacity)
         self.batch_size = args.batch_size
-        self.buffer_capacity = args.buffer_capacity
-        self.current_size = 0
-        self.count = 0
-        self.buffer = {'state': np.zeros((self.buffer_capacity, args.state_dim)),
-                       'action': np.zeros((self.buffer_capacity, 1)),
-                       'reward': np.zeros(self.buffer_capacity),
-                       'next_state': np.zeros((self.buffer_capacity, args.state_dim)),
-                       'terminal': np.zeros(self.buffer_capacity),
-                       }
+        # self.buffer_capacity = args.buffer_capacity
+        # self.count = 0
+        # self.buffer = {'state': np.zeros((self.buffer_capacity, args.state_dim)),
+        #                'action': np.zeros((self.buffer_capacity, 1)),
+        #                'reward': np.zeros(self.buffer_capacity),
+        #                'next_state': np.zeros((self.buffer_capacity, args.state_dim)),
+        #                'terminal': np.zeros(self.buffer_capacity),
+        #                }
 
-    def store_transition(self, state, action, reward, next_state, terminal, done):
-        self.buffer['state'][self.count] = state
-        self.buffer['action'][self.count] = action
-        self.buffer['reward'][self.count] = reward
-        self.buffer['next_state'][self.count] = next_state
-        self.buffer['terminal'][self.count] = terminal
-        self.count = (self.count + 1) % self.buffer_capacity  # When the 'count' reaches buffer_capacity, it will be reset to 0.
-        self.current_size = min(self.current_size + 1, self.buffer_capacity)
+    def store_transition(self, *args):
+        self.memory.append(Transition(*args))
+        # self.buffer['state'][self.count] = state
+        # self.buffer['action'][self.count] = action
+        # self.buffer['reward'][self.count] = reward
+        # self.buffer['next_state'][self.count] = next_state
+        # self.buffer['terminal'][self.count] = terminal
+        # self.count = (self.count + 1) % self.buffer_capacity
+        # # When the 'count' reaches buffer_capacity, it will be reset to 0.
+        # self.current_size = min(self.current_size + 1, self.buffer_capacity)
 
     def sample(self, total_steps):
-        index = np.random.randint(0, self.current_size, size=self.batch_size)
-        batch = {}
-        for key in self.buffer.keys():  # numpy->tensor
-            if key == 'action':
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long)
-            else:
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32)
+        # return a list including k elements
+        return random.sample(self.memory, k=self.batch_size)
+        # index = np.random.randint(0, self.current_size, size=self.batch_size)
+        # batch = {}
+        # for key in self.buffer.keys():  # numpy->tensor
+        #     if key == 'action':
+        #         batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long)
+        #     else:
+        #         batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32)
+        #
+        # return batch, None, None
 
-        return batch, None, None
+    @property
+    def current_size(self):
+        return len(self.memory)
 
 
 class N_Steps_ReplayBuffer(object):
     def __init__(self, args):
-        self.gamma = args.gamma
+        self.memory = deque([], maxlen=args.buffer_capacity)
         self.batch_size = args.batch_size
-        self.buffer_capacity = args.buffer_capacity
-        self.current_size = 0
-        self.count = 0
+        self.gamma = args.gamma
         self.n_steps = args.n_steps
         self.n_steps_deque = deque(maxlen=self.n_steps)
-        self.buffer = {'state': np.zeros((self.buffer_capacity, args.state_dim)),
-                       'action': np.zeros((self.buffer_capacity, 1)),
-                       'reward': np.zeros(self.buffer_capacity),
-                       'next_state': np.zeros((self.buffer_capacity, args.state_dim)),
-                       'terminal': np.zeros(self.buffer_capacity),
-                       }
+        # self.batch_size = args.batch_size
+        # self.buffer_capacity = args.buffer_capacity
+        # self.current_size = 0
+        # self.count = 0
+        # self.n_steps = args.n_steps
+        # self.n_steps_deque = deque(maxlen=self.n_steps)
+        # self.buffer = {'state': np.zeros((self.buffer_capacity, args.state_dim)),
+        #                'action': np.zeros((self.buffer_capacity, 1)),
+        #                'reward': np.zeros(self.buffer_capacity),
+        #                'next_state': np.zeros((self.buffer_capacity, args.state_dim)),
+        #                'terminal': np.zeros(self.buffer_capacity),
+        #                }
 
-    def store_transition(self, state, action, reward, next_state, terminal, done):
-        transition = (state, action, reward, next_state, terminal, done)
-        self.n_steps_deque.append(transition)
+    def store_transition(self, *args):
+        self.n_steps_deque.append(Transition(*args))
+        if len(self.n_steps_deque) == self.n_steps:
+
+
+        self.memory.append(Transition(*args))
+        # transition = (state, action, reward, next_state, terminal, done)
+        # self.n_steps_deque.append(transition)
         if len(self.n_steps_deque) == self.n_steps:
             state, action, n_steps_reward, next_state, terminal = self.get_n_steps_transition()
             self.buffer['state'][self.count] = state
@@ -64,7 +85,7 @@ class N_Steps_ReplayBuffer(object):
             self.buffer['reward'][self.count] = n_steps_reward
             self.buffer['next_state'][self.count] = next_state
             self.buffer['terminal'][self.count] = terminal
-            self.count = (self.count + 1) % self.buffer_capacity  # When the 'count' reaches buffer_capacity, it will be reset to 0.
+            self.count = (self.count + 1) % self.buffer_capacity
             self.current_size = min(self.current_size + 1, self.buffer_capacity)
 
     def get_n_steps_transition(self):
@@ -80,15 +101,21 @@ class N_Steps_ReplayBuffer(object):
         return state, action, n_steps_reward, next_state, terminal
 
     def sample(self, total_steps):
-        index = np.random.randint(0, self.current_size, size=self.batch_size)
-        batch = {}
-        for key in self.buffer.keys():  # numpy->tensor
-            if key == 'action':
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long)
-            else:
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32)
+        # return a list including k elements
+        return random.sample(self.memory, k=self.batch_size)
+        # index = np.random.randint(0, self.current_size, size=self.batch_size)
+        # batch = {}
+        # for key in self.buffer.keys():  # numpy->tensor
+        #     if key == 'action':
+        #         batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long)
+        #     else:
+        #         batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32)
+        #
+        # return batch, None, None
 
-        return batch, None, None
+    @property
+    def current_size(self):
+        return len(self.memory)
 
 
 class Prioritized_ReplayBuffer(object):
@@ -118,11 +145,13 @@ class Prioritized_ReplayBuffer(object):
         # 如果是第一条经验，初始化优先级为1.0；否则，对于新存入的经验，指定为当前最大的优先级
         priority = 1.0 if self.current_size == 0 else self.sum_tree.priority_max
         self.sum_tree.update(data_index=self.count, priority=priority)  # 更新当前经验在sum_tree中的优先级
-        self.count = (self.count + 1) % self.buffer_capacity  # When the 'count' reaches buffer_capacity, it will be reset to 0.
+        self.count = (
+                                 self.count + 1) % self.buffer_capacity  # When the 'count' reaches buffer_capacity, it will be reset to 0.
         self.current_size = min(self.current_size + 1, self.buffer_capacity)
 
     def sample(self, total_steps):
-        batch_index, IS_weight = self.sum_tree.get_batch_index(current_size=self.current_size, batch_size=self.batch_size, beta=self.beta)
+        batch_index, IS_weight = self.sum_tree.get_batch_index(current_size=self.current_size,
+                                                               batch_size=self.batch_size, beta=self.beta)
         self.beta = self.beta_init + (1 - self.beta_init) * (total_steps / self.max_train_steps)  # beta：beta_init->1.0
         batch = {}
         for key in self.buffer.keys():  # numpy->tensor
@@ -173,11 +202,13 @@ class N_Steps_Prioritized_ReplayBuffer(object):
             # 如果是buffer中的第一条经验，那么指定priority为1.0；否则对于新存入的经验，指定为当前最大的priority
             priority = 1.0 if self.current_size == 0 else self.sum_tree.priority_max
             self.sum_tree.update(data_index=self.count, priority=priority)  # 更新当前经验在sum_tree中的优先级
-            self.count = (self.count + 1) % self.buffer_capacity  # When 'count' reaches buffer_capacity, it will be reset to 0.
+            self.count = (
+                                     self.count + 1) % self.buffer_capacity  # When 'count' reaches buffer_capacity, it will be reset to 0.
             self.current_size = min(self.current_size + 1, self.buffer_capacity)
 
     def sample(self, total_steps):
-        batch_index, IS_weight = self.sum_tree.get_batch_index(current_size=self.current_size, batch_size=self.batch_size, beta=self.beta)
+        batch_index, IS_weight = self.sum_tree.get_batch_index(current_size=self.current_size,
+                                                               batch_size=self.batch_size, beta=self.beta)
         self.beta = self.beta_init + (1 - self.beta_init) * (total_steps / self.max_train_steps)  # beta：beta_init->1.0
         batch = {}
         for key in self.buffer.keys():  # numpy->tensor
