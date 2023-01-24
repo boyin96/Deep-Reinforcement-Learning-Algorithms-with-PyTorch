@@ -1,9 +1,7 @@
-import torch
-import numpy as np
 import gym
 from torch.utils.tensorboard import SummaryWriter
-from replay_buffer import *
-from rainbow_dqn import DQN
+from DQN.utilities.replay_buffer import *
+from dqn_agent import DQN
 import argparse
 
 
