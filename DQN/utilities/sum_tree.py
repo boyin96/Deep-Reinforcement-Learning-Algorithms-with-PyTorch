@@ -10,6 +10,7 @@ class SumTree:
         self.tree = np.zeros(self.tree_capacity)
 
     def update(self, data_index, priority):
+        """"Update priority of tree"""
         # data_index represent the index of transition in buffer
         # tree_index represent the index of data in sumtree
         tree_index = data_index + self.buffer_capacity - 1
@@ -21,8 +22,7 @@ class SumTree:
             self.tree[tree_index] += change
 
     def get_index(self, v):
-        """"given a priority return the index of data in buffer corresponding to the specific leaf node and priority"""
-
+        """"Return the index of data in buffer corresponding to the specific leaf node and priority"""
         parent_idx = 0
         while True:
             child_left_idx = 2 * parent_idx + 1
@@ -42,8 +42,7 @@ class SumTree:
         return data_index, self.tree[tree_index]
 
     def get_batch_index(self, current_size, batch_size, beta):
-        """sample batch transitions and return data index and its learning rate factor"""
-
+        """Sample batch transitions and return data index and its learning rate factor"""
         batch_index = np.zeros(batch_size, dtype=np.long)
         IS_weight = torch.zeros(batch_size, dtype=torch.float32)
         segment = self.priority_sum / batch_size
@@ -64,3 +63,7 @@ class SumTree:
     @property
     def priority_sum(self):
         return self.tree[0]
+
+    @property
+    def priority_max(self):
+        return self.tree[self.buffer_capacity - 1:].max()
