@@ -11,11 +11,11 @@ This repository is for implementing deep reinforcement learning algorithms with 
 More RL algorithms will be added soon.
 
 ## **Reference**
-[rainbow-is-all-you-need](https://github.com/Curt-Park/rainbow-is-all-you-need)
+[1] [rainbow-is-all-you-need.](https://github.com/Curt-Park/rainbow-is-all-you-need)
 
-[pg-is-all-you-need](https://github.com/MrSyee/pg-is-all-you-need)
+[2] [pg-is-all-you-need.](https://github.com/MrSyee/pg-is-all-you-need)
 
-[DRL-with-PyTorch](https://github.com/p-christ/Deep-Reinforcement-Learning-Algorithms-with-PyTorch)
+[3] [DRL-with-PyTorch.](https://github.com/p-christ/Deep-Reinforcement-Learning-Algorithms-with-PyTorch)
 
 ## **License**
 
