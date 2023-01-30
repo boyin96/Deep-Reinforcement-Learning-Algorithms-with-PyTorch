@@ -18,7 +18,7 @@ from typing import Callable
 class SegmentTree:
     """ Create SegmentTree.
 
-    Taken from OpenAI baselines github repository:
+    Taken from OpenAI baselines GitHub repository:
     https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py
 
     Attributes:
@@ -90,7 +90,7 @@ class SegmentTree:
 class SumSegmentTree(SegmentTree):
     """ Create SumSegmentTree.
 
-    Taken from OpenAI baselines github repository:
+    Taken from OpenAI baselines GitHub repository:
     https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py
 
     """
@@ -131,7 +131,7 @@ class SumSegmentTree(SegmentTree):
 class MinSegmentTree(SegmentTree):
     """ Create SegmentTree.
 
-    Taken from OpenAI baselines github repository:
+    Taken from OpenAI baselines GitHub repository:
     https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py
 
     """
@@ -179,11 +179,11 @@ class ReplayBuffer:
     def store(
             self,
             obs: np.ndarray,
-            act: np.ndarray,
+            act: Union[np.ndarray, int],
             rew: float,
             next_obs: np.ndarray,
             done: bool,
-    ) -> Tuple[np.ndarray, np.ndarray, float, np.ndarray, bool]:
+    ) -> Union[Tuple[np.ndarray, np.ndarray, float, np.ndarray, bool], Tuple]:
         transition = (obs, act, rew, next_obs, done)
         self.n_step_buffer.append(transition)
 
@@ -191,7 +191,7 @@ class ReplayBuffer:
         if len(self.n_step_buffer) < self.n_step:
             return ()
 
-        # make a n-step transition
+        # make an n-step transition
         rew, next_obs, done = self._get_n_step_info(
             self.n_step_buffer, self.gamma
         )
@@ -232,8 +232,9 @@ class ReplayBuffer:
             done=self.done_buf[idxs],
         )
 
+    @staticmethod
     def _get_n_step_info(
-            self, n_step_buffer: Deque, gamma: float
+            n_step_buffer: Deque, gamma: float
     ) -> Tuple[np.int64, np.ndarray, bool]:
         """Return n step rew, next_obs, and done."""
         # info of the last transition

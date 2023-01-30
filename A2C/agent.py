@@ -1,15 +1,15 @@
-import random
-from typing import List, Tuple
-
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from IPython.display import clear_output
-from torch.distributions import Normal
+from typing import List, Tuple
+
+from utilities import Actor, Critic
+
+
 class A2CAgent:
     """A2CAgent interacting with environment.
 
@@ -72,7 +72,8 @@ class A2CAgent:
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
         """Take an action and return the response of the env."""
-        next_state, reward, done, _ = self.env.step(action)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+        done = terminated or truncated
 
         if not self.is_test:
             self.transition.extend([next_state, reward, done])
@@ -113,7 +114,7 @@ class A2CAgent:
         self.is_test = False
 
         actor_losses, critic_losses, scores = [], [], []
-        state = self.env.reset()
+        state, _ = self.env.reset()
         score = 0
 
         for self.total_step in range(1, num_frames + 1):
@@ -129,13 +130,13 @@ class A2CAgent:
 
             # if episode ends
             if done:
-                state = env.reset()
+                state, _ = self.env.reset()
                 scores.append(score)
                 score = 0
 
                 # plot
             if self.total_step % plotting_interval == 0:
-                self._plot(self.total_step, scores, actor_losses, critic_losses)
+                # self._plot(self.total_step, scores, actor_losses, critic_losses)
         self.env.close()
 
     def test(self):

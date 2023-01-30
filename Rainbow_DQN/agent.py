@@ -5,7 +5,6 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 
-from IPython.display import clear_output
 from torch.nn.utils import clip_grad_norm_
 from typing import Dict, List, Tuple, Any
 
@@ -115,7 +114,7 @@ class DQNAgent:
         loss = torch.mean(elementwise_loss * weights)
 
         # N-step Learning loss
-        # we are going combine 1-step loss and n-step loss so as to
+        # we are going combine 1-step loss and n-step loss to
         # prevent high-variance. The original rainbow employs n-step loss only.
         if self.use_n_step:
             gamma = self.gamma ** self.n_step
