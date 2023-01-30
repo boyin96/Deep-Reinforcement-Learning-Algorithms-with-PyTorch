@@ -1,53 +1,49 @@
-import gym
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from IPython.display import clear_output
-from typing import List, Tuple
+
+from typing import List, Tuple, Union
 
 from utilities import Actor, Critic
 
 
 class A2CAgent:
-    """A2CAgent interacting with environment.
+    """A2CAgent interacting with environment."""
 
-    Atribute:
-        env (gym.Env): openAI Gym environment
-        gamma (float): discount factor
-        entropy_weight (float): rate of weighting entropy into the loss function
-        device (torch.device): cpu / gpu
-        actor (nn.Module): target actor model to select actions
-        critic (nn.Module): critic model to predict state values
-        actor_optimizer (optim.Optimizer) : optimizer of actor
-        critic_optimizer (optim.Optimizer) : optimizer of critic
-        transition (list): temporory storage for the recent transition
-        total_step (int): total step numbers
-        is_test (bool): flag to show the current mode (train / test)
-    """
-
-    def __init__(self, env: gym.Env, gamma: float, entropy_weight: float):
+    def __init__(self, args: argparse.Namespace):
         """Initialize."""
-        self.env = env
-        self.gamma = gamma
-        self.entropy_weight = entropy_weight
+        self.use_soft_update = args.use_soft_update
+        self.args = args
+        self.env = args.env
+        self.gamma = args.gamma
+        self.entropy_weight = args.entropy_weight
+        self.num_frames = args.num_frames
+        self.plotting_interval = args.plotting_interval
+        self.use_target_net = args.use_target_net
 
         # device: cpu / gpu
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
-        print(self.device)
+        self.device = args.device
+
+        self.target_update = args.target_update
 
         # networks
-        obs_dim = env.observation_space.shape[0]
-        action_dim = env.action_space.shape[0]
-        self.actor = Actor(obs_dim, action_dim).to(self.device)
-        self.critic = Critic(obs_dim).to(self.device)
+        obs_dim = args.env.observation_space.shape[0]
+        action_dim = args.env.action_space.shape[0]
+        self.args.obs_dim = obs_dim
+        self.args.action_dim = action_dim
+        self.actor = Actor(args).to(self.device)
+        self.critic = Critic(args).to(self.device)
+
+        self.critic_target = Critic(args).to(self.device)
+        self.critic_target.load_state_dict(self.critic.state_dict())
+        self.critic_target.eval()
 
         # optimizer
-        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=1e-4)
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=1e-3)
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), args.lr_actor)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), args.lr_critic)
 
         # transition (state, log_prob, next_state, reward, done)
         self.transition: list = list()
@@ -56,7 +52,7 @@ class A2CAgent:
         self.total_step = 0
 
         # mode: train / test
-        self.is_test = False
+        self.is_test = args.is_test
 
     def select_action(self, state: np.ndarray) -> np.ndarray:
         """Select an action from the input state."""
@@ -89,7 +85,10 @@ class A2CAgent:
         mask = 1 - done
         next_state = torch.FloatTensor(next_state).to(self.device)
         pred_value = self.critic(state)
-        targ_value = reward + self.gamma * self.critic(next_state) * mask
+        if self.use_target_net:
+            targ_value = reward + self.gamma * self.critic_target(next_state) * mask
+        else:
+            targ_value = reward + self.gamma * self.critic(next_state) * mask
         value_loss = F.smooth_l1_loss(pred_value, targ_value.detach())
 
         # update value
@@ -109,15 +108,17 @@ class A2CAgent:
 
         return policy_loss.item(), value_loss.item()
 
-    def train(self, num_frames: int, plotting_interval: int = 200):
+    def train(self):
         """Train the agent."""
         self.is_test = False
 
+        update_cnt = 0
         actor_losses, critic_losses, scores = [], [], []
         state, _ = self.env.reset()
         score = 0
+        plt.ion()
 
-        for self.total_step in range(1, num_frames + 1):
+        for self.total_step in range(1, self.num_frames + 1):
             action = self.select_action(state)
             next_state, reward, done = self.step(action)
 
@@ -134,9 +135,22 @@ class A2CAgent:
                 scores.append(score)
                 score = 0
 
+            # if using target network
+            if self.use_target_net:
+                update_cnt += 1
+                # if hard update is needed
+                if self.use_soft_update:
+                    self._target_soft_update()
+                else:
+                    if update_cnt % self.target_update == 0:
+                        self._target_hard_update()
+
                 # plot
-            if self.total_step % plotting_interval == 0:
-                # self._plot(self.total_step, scores, actor_losses, critic_losses)
+            if self.total_step % self.plotting_interval == 0:
+                self._plot_dynamic(self.total_step, scores, actor_losses, critic_losses)
+
+        plt.ioff()
+        plt.show()
         self.env.close()
 
     def test(self):
@@ -161,12 +175,21 @@ class A2CAgent:
 
         return frames
 
-    def _plot(
-            self,
+    def _target_hard_update(self):
+        """Hard update: target <- local."""
+        self.critic_target.load_state_dict(self.critic.state_dict())
+
+    def _target_soft_update(self):
+        """Soft update: target <- local."""
+        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+            target_param.data.copy_(self.args.tau * param.data + (1 - self.args.tau) * target_param.data)
+
+    @staticmethod
+    def _plot_dynamic(
             frame_idx: int,
             scores: List[float],
-            actor_losses: List[float],
-            critic_losses: List[float],
+            actor_losses: Union[List[float], List[torch.Tensor]],
+            critic_losses: Union[List[float], List[torch.Tensor]],
     ):
         """Plot the training progresses."""
 
@@ -181,8 +204,8 @@ class A2CAgent:
             (133, "critic_loss", critic_losses),
         ]
 
-        clear_output(True)
-        plt.figure(figsize=(30, 5))
-        for loc, title, values in subplot_params:
-            subplot(loc, title, values)
-        plt.show()
+        plt.clf()
+        plt.figure(1)
+        for loc_i, title_i, values_i in subplot_params:
+            subplot(loc_i, title_i, values_i)
+        plt.pause(0.001)

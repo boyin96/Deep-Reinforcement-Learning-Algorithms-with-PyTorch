@@ -25,6 +25,7 @@ parser.add_argument("--num_frames", type=int, default=int(2e4), help="Maximum nu
 parser.add_argument("--seed", type=int, default=42, help="The seed of entire system")
 parser.add_argument("--env", type=gym.Env, default=env, help="The environment in system")
 parser.add_argument("--device", type=torch.device, default=device, help="The cpu or gpu being used")
+parser.add_argument("--plotting_interval", type=int, default=200, help="How many steps to plot results")
 
 # About sample size
 parser.add_argument("--memory_size", type=int, default=int(1e3), help="The maximum replay buffer capacity")

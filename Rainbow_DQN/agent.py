@@ -18,6 +18,7 @@ class DQNAgent:
 
         self.args = args
         self.use_soft_update = args.use_soft_update
+        self.plotting_interval = args.plotting_interval
 
         self.num_frames = args.num_frames
         self.memory_size = args.memory_size
@@ -141,7 +142,7 @@ class DQNAgent:
 
         return loss.item()
 
-    def train(self, plotting_interval: int = 200):
+    def train(self):
         """Train the agent."""
         self.is_test = False
         state, _ = self.env.reset()
@@ -182,7 +183,7 @@ class DQNAgent:
                         self._target_hard_update()
 
             # plotting
-            if frame_idx % plotting_interval == 0:
+            if frame_idx % self.plotting_interval == 0:
                 self._plot_dynamic(frame_idx, scores, losses)
 
         plt.ioff()
