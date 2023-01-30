@@ -4,9 +4,9 @@ This repository is for implementing deep reinforcement learning algorithms with 
 
 ## **Algorithms Implemented**
 
-1. *Rainbow Deep Q Learning (DQN)*
+1. *Rainbow Deep Q Learning (DQN) (Just for Discrete)*
 
-2. *A2C*
+2. *A2C (Both for Continuous and Discrete)*
 
 More RL algorithms will be added soon.
 
