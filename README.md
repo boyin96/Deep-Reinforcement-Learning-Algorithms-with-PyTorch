@@ -17,6 +17,8 @@ More RL algorithms will be added soon.
 
 [3] [DRL-with-PyTorch.](https://github.com/p-christ/Deep-Reinforcement-Learning-Algorithms-with-PyTorch)
 
+[4] [DRL-code-pytorch](https://github.com/Lizhi-sjtu/DRL-code-pytorch)
+
 ## **License**
 
 This repo is licensed under the MIT License.
