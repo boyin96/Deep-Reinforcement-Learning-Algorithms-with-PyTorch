@@ -1,6 +1,6 @@
 # Deep-Reinforcement-Learning-Algorithms-with-PyTorch
 
-This repository is for implementing deep reinforcement learning algorithms with PyTorch.
+This repo is implementation for deep reinforcement learning algorithms in PyTorch.
 
 ## **Algorithms Implemented**
 
@@ -11,9 +11,9 @@ This repository is for implementing deep reinforcement learning algorithms with 
 More RL algorithms will be added soon.
 
 ## **Reference**
-> [1] [rainbow-is-all-you-need](https://github.com/Curt-Park/rainbow-is-all-you-need)
-> [2] [pg-is-all-you-need](https://github.com/MrSyee/pg-is-all-you-need)
-> [3] [DRL-with-PyTorch](https://github.com/p-christ/Deep-Reinforcement-Learning-Algorithms-with-PyTorch)
+> [1] [rainbow-is-all-you-need](https://github.com/Curt-Park/rainbow-is-all-you-need) </br>
+> [2] [pg-is-all-you-need](https://github.com/MrSyee/pg-is-all-you-need) </br> 
+> [3] [DRL-with-PyTorch](https://github.com/p-christ/Deep-Reinforcement-Learning-Algorithms-with-PyTorch) </br>
 > [4] [DRL-code-pytorch](https://github.com/Lizhi-sjtu/DRL-code-pytorch)
 
 ## **License**
